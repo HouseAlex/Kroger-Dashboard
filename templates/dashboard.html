@@ -85,64 +85,61 @@
             </div>
         
     </div>
-    <div class="container">
-        <table id="detailedTable" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Household Number</th>
-                    <th>Basket Number</th>
-                    <th>Date</th>
-                    <th>Product Number</th>
-                    <th>Department</th>
-                    <th>Commodity</th>
-                    <th>Spend</th>
-                    <th>Units</th>
-                    <th>Store Region</th>
-                    <th>Week</th>
-                    <th>Year</th>
-                    <!--<th>L</th>
-                    <th>Age Range</th>
-                    <th>Marital</th>
-                    <th>Income Range</th>
-                    <th>Homeowner</th>
-                    <th>Household Composition</th>
-                    <th>Household Size</th>
-                    <th>Children</th>-->
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-    </table>
-    </div> 
+    <div id="table"></div> 
 
     <script>
-        $(document).ready(function () {
-          $('#detailedTable').DataTable({
-            ajax: '/dasboard/table/data',
-            serverSide: true,
+        const updateUrl = (prev, query) => {
+            return prev + (prev.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(query).toString();
+        };
+
+        new gridjs.Grid({
             columns: [
-              {data: 'HSHD_NUM', orderable: true, searchable: true},
-              {data: 'BASKET_NUM', orderable: true, searchable: false},
-              {data: 'DATE', orderable: true, searchable: false},
-              {data: 'PRODUCT_NUM', orderable: true, searchable: false},
-              {data: 'DEPARTMENT', orderable: true, searchable: false},
-              {data: 'COMMODITY', orderable: true, searchable: false},
-              {data: 'SPEND', orderable: false, searchable: false},
-              {data: 'UNITS', orderable: false, searchable: false},
-              {data: 'STORE_R', orderable: false, searchable: false},
-              {data: 'WEEK_NUM', orderable: false, searchable: false},
-              {data: 'YEAR', orderable: false, searchable: false}
-              /*{data: 'L', orderable: false, searchable: false},
-              {data: 'AGE_RANGE', orderable: false, searchable: false},
-              {data: 'MARITAL', orderable: false, searchable: false},
-              {data: 'INCOME_RANGE', orderable: false, searchable: false},
-              {data: 'HOMEOWNER', orderable: false, searchable: false},
-              {data: 'HSHD_COMPOSITION', orderable: false, searchable: false},
-              {data: 'HH_SIZE', orderable: false, searchable: false},
-              {data: 'CHILDREN', orderable: false, searchable: false}*/
+                {id: 'HSHD_NUM', name: 'Household Number'},
+                {id: 'BASKET_NUM', name: 'Basket Number'},
+                {id: 'DATE', name: 'Date'},
+                {id: 'PRODUCT_NUM', name: 'Product Number'},
+                {id: 'DEPARTMENT', name: 'Department'},
+                {id: 'COMMODITY', name: 'Commodity'},
+                {id: 'SPEND', name: 'Spend'},
+                {id: 'UNITS', name: 'Units'},
+                {id: 'STORE_R', name: 'Store Region'},
+                {id: 'WEEK_NUM', name: 'Week Number'},
+                {id: 'YEAR', name: 'Year'},
             ],
-          });
-        });
+            server: {
+                url: 'dashboard/table/data',
+                then: results => results.data,
+                total: results => results.total
+            },
+            search: {
+            enabled: true,
+            server: {
+                url: (prev, search) => {
+                return updateUrl(prev, {search});
+                },
+            },
+            },
+            sort: {
+                enabled: true,
+                multiColumn: true,
+                server: {
+                    url: (prev, columns) => {
+                    const columnIds = ['HSHD_NUM', 'BASKET_NUM', 'DATE', 'PRODUCT_NUM', 'DEPARTMENT', 'COMMODITY'];
+                    const sort = columns.map(col => (col.direction === 1 ? '+,' : '-,') + columnIds[col.index]);
+                    return updateUrl(prev, {sort});
+                    },
+                },
+            },
+            pagination: {
+            enabled: true,
+            server: {
+                url: (prev, page, limit) => {
+                return updateUrl(prev, {start: page * limit, length: limit});
+                },
+            },
+            },
+        }).render(document.getElementById('table'));
+
       </script>
 </div>
 
