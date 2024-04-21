@@ -23,9 +23,7 @@ accountKey = os.getenv('ACCOUNT_KEY')
 conatinerName = os.getenv('CONTAINER_NAME')
 connStr = os.getenv('AZURE_BLOB')
 detailedDF = pl.read_csv("data/detailed-data.csv")
-analysisDF = pl.read_csv("data/analysis.csv")
-sampleDF = pl.read_csv("data/sample-dataset.csv")
-#joinedDF = detailedDF.join(analysisDF, on='HSHD_NUM', how='inner')
+#sampleDF = pl.read_csv("data/sample-dataset.csv")
 basketDF = (
     detailedDF
         .group_by(['HSHD_NUM', 'BASKET_NUM'])
@@ -49,7 +47,7 @@ demosDF = (
         .group_by(['HSHD_NUM', 'AGE_RANGE', 'MARITAL', 'INCOME_RANGE','HOMEOWNER', 'CHILDREN']).agg()
 )
 joinedDF = demosDF.join(hshdDF,on='HSHD_NUM',how='inner')
-tableDF = sampleDF.select(["HSHD_NUM","BASKET_NUM","DATE", "PRODUCT_NUM","DEPARTMENT", "COMMODITY","SPEND",'UNITS',"STORE_R", "WEEK_NUM", "YEAR"])
+tableDF = detailedDF.select(["HSHD_NUM","BASKET_NUM","DATE", "PRODUCT_NUM","DEPARTMENT", "COMMODITY","SPEND",'UNITS',"STORE_R", "WEEK_NUM", "YEAR"])
 
 
 # SQL Lite DB for login information.
