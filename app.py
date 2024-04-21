@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, g, request, send_file,  jsonify
+from flask import Flask, render_template, redirect, url_for, g, request, send_file,  jsonify, make_response
 from flask_caching import Cache
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
@@ -49,7 +49,7 @@ demosDF = (
         .group_by(['HSHD_NUM', 'AGE_RANGE', 'MARITAL', 'INCOME_RANGE','HOMEOWNER', 'CHILDREN']).agg()
 )
 joinedDF = demosDF.join(hshdDF,on='HSHD_NUM',how='inner')
-tableDF = detailedDF.select(["HSHD_NUM","BASKET_NUM","DATE", "PRODUCT_NUM","DEPARTMENT", "COMMODITY","SPEND",'UNITS',"STORE_R", "WEEK_NUM", "YEAR"])
+tableDF = sampleDF.select(["HSHD_NUM","BASKET_NUM","DATE", "PRODUCT_NUM","DEPARTMENT", "COMMODITY","SPEND",'UNITS',"STORE_R", "WEEK_NUM", "YEAR"])
 
 
 # SQL Lite DB for login information.
@@ -163,37 +163,43 @@ def getCharts(selected_value, title):
 
     return totalSpentJSON, spendJSON
 
+@app.route('/dasboard/table/data-og', methods=['GET'])
+def dashboardTableDataOG():
+    dataDF = tableDF.to_dicts()
+    return jsonify(dataDF)
 
-@app.route('/dasboard/table/data', methods=['GET'])
+
+@app.route('/dashboard/table/data')
 def dashboardTableData():
     dataDF = tableDF
     
     # search
-    search = request.args.get('search[value]')
+    search = request.args.get('search')
     if search:
-        dataDF = dataDF.filter((pl.col('HSHD_NUM') == search))
-    totalFiltered = dataDF.count()
+        dataDF = dataDF.filter((pl.col('HSHD_NUM') == int(search)))
+    totalFiltered = dataDF.height
 
     # sorting
-    col_index = request.args.get(f'order[0][column]')
-    if col_index:
-        col = request.args.get(f'columns[{col_index}][data]')
-        descending = request.args.get(f'order[0][dir]') == 'desc'
-        dataDF.sort(col, descending=descending)
+    sort = request.args.get('sort')
+    if sort:
+        s = sort.split(',')
+
+        desc = s[0] == '-'
+
+        dataDF = dataDF.sort(s[1], descending=desc)
 
     # page
-    start = request.args.get('start', type=int)
-    length = request.args.get('length', type=int)
-    
-    dataDF = dataDF.slice(start, start+length)
+    start = request.args.get('start', type=int, default=-1)
+    length = request.args.get('length', type=int, default=-1)
+    if start != -1 and length != -1:
+        dataDF = dataDF.slice(start, start+length)
 
-    data = dataDF.to_dicts()
+    data = dataDF.to_pandas().values.tolist()
+    dataJSON = jsonify(data)
 
     return {
-        'data': jsonify(data),
-        'recordsFiltered': totalFiltered,
-        'recordsTotal': dataDF.count(),
-        'draw': request.args.get('draw', type=int),
+        'data': data,
+        'total': totalFiltered 
     }
 
 @app.route('/login', methods=['GET'])
